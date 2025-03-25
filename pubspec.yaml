@@ -40,7 +40,6 @@ dependencies:
   fl_chart: ^0.63.0
   permission_handler: ^11.0.1
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
-
-// Import file yang sesuai berdasarkan platform
+import 'package:fl_chart/fl_chart.dart';
+import 'dart:math';
 import 'utils/download_log.dart';
 
 void main() {
@@ -18,6 +18,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Timer? _timer;
   List<String> logData = [];
+  List<FlSpot> cpuData = [];
+  List<FlSpot> ramData = [];
+  int loopCount = 1000000;
+  List<int> quickSortData = List.generate(10000, (_) => Random().nextInt(10000));
 
   @override
   void initState() {
@@ -25,14 +29,50 @@ class _MyAppState extends State<MyApp> {
     startMonitoring();
   }
 
+  int fibonacciRecursive(int n) {
+    if (n <= 1) return n;
+    return fibonacciRecursive(n - 1) + fibonacciRecursive(n - 2);
+  }
+
+  void quickSort(List<int> list, int low, int high) {
+    if (low < high) {
+      int pivotIndex = partition(list, low, high);
+      quickSort(list, low, pivotIndex - 1);
+      quickSort(list, pivotIndex + 1, high);
+    }
+  }
+
+  int partition(List<int> list, int low, int high) {
+    int pivot = list[high];
+    int i = low - 1;
+    for (int j = low; j < high; j++) {
+      if (list[j] < pivot) {
+        i++;
+        int temp = list[i];
+        list[i] = list[j];
+        list[j] = temp;
+      }
+    }
+    int temp = list[i + 1];
+    list[i + 1] = list[high];
+    list[high] = temp;
+    return i + 1;
+  }
+
   void startMonitoring() {
     _timer = Timer.periodic(Duration(seconds: 2), (timer) {
       setState(() {
         int cpuUsage = (50 + (50 * (timer.tick % 5))).toInt();
         int ramUsage = (400 + (100 * (timer.tick % 5))).toInt();
-        int runtime = timer.tick * 2;
+        int runtime = timer.tick * 2 * 1000;
 
-        logData.add("$runtime\t$cpuUsage\t$ramUsage");
+        fibonacciRecursive(40);
+        for (int i = 0; i < loopCount; i++) {}
+        quickSort(quickSortData, 0, quickSortData.length - 1);
+
+        logData.add("$runtime,$cpuUsage,$ramUsage");
+        cpuData.add(FlSpot(timer.tick.toDouble(), cpuUsage.toDouble()));
+        ramData.add(FlSpot(timer.tick.toDouble(), ramUsage.toDouble()));
       });
     });
   }
@@ -46,40 +86,29 @@ class _MyAppState extends State<MyApp> {
   Future<void> downloadLog(BuildContext context) async {
     _timer?.cancel();
 
-    // Header CSV
     String csvData = "Time(ms),CPU(%),RAM(MB)\n";
-
-    // Konversi data ke format CSV yang benar
     for (String entry in logData) {
-      List<String> values = entry.split("\t");
-      if (values.length == 3) {
-        int timeMs = int.parse(values[0]) * 1000; // Konversi detik ke milidetik
-        csvData += "$timeMs,${values[1]},${values[2]}\n";
-      }
+      csvData += "$entry\n";
     }
 
     await saveCsv(csvData, context);
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: Text("Performance Monitor")),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Monitoring..."),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => downloadLog(context),
-                child: Text("Download CSV Log"),
-              ),
-            ],
-          ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: 150, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: cpuData, isCurved: true, color: Colors.red, dotData: FlDotData(show: false))]))),
+            SizedBox(height: 150, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: ramData, isCurved: true, color: Colors.blue, dotData: FlDotData(show: false))]))),
+            ElevatedButton(
+              onPressed: () => downloadLog(context),
+              child: Text("Download CSV Log"),
+            ),
+          ],
         ),
       ),
     );
