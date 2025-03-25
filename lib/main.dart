@@ -22,6 +22,7 @@ class _MyAppState extends State<MyApp> {
   List<FlSpot> ramData = [];
   int loopCount = 1000000;
   List<int> quickSortData = List.generate(10000, (_) => Random().nextInt(10000));
+  int fiboTime = 0, loopTime = 0, quickSortTime = 0;
 
   @override
   void initState() {
@@ -66,11 +67,19 @@ class _MyAppState extends State<MyApp> {
         int ramUsage = (400 + (100 * (timer.tick % 5))).toInt();
         int runtime = timer.tick * 2 * 1000;
 
+        int start = DateTime.now().millisecondsSinceEpoch;
         fibonacciRecursive(40);
-        for (int i = 0; i < loopCount; i++) {}
-        quickSort(quickSortData, 0, quickSortData.length - 1);
+        fiboTime = DateTime.now().millisecondsSinceEpoch - start;
 
-        logData.add("$runtime,$cpuUsage,$ramUsage");
+        start = DateTime.now().millisecondsSinceEpoch;
+        for (int i = 0; i < loopCount; i++) {}
+        loopTime = DateTime.now().millisecondsSinceEpoch - start;
+
+        start = DateTime.now().millisecondsSinceEpoch;
+        quickSort(quickSortData, 0, quickSortData.length - 1);
+        quickSortTime = DateTime.now().millisecondsSinceEpoch - start;
+
+        logData.add("$runtime,$cpuUsage,$ramUsage,$fiboTime,$loopTime,$quickSortTime");
         cpuData.add(FlSpot(timer.tick.toDouble(), cpuUsage.toDouble()));
         ramData.add(FlSpot(timer.tick.toDouble(), ramUsage.toDouble()));
       });
@@ -86,7 +95,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> downloadLog(BuildContext context) async {
     _timer?.cancel();
 
-    String csvData = "Time(ms),CPU(%),RAM(MB)\n";
+    String csvData = "Time(ms),CPU(%),RAM(MB),Fibonacci(ms),Loop(ms),QuickSort(ms)\n";
     for (String entry in logData) {
       csvData += "$entry\n";
     }
@@ -102,8 +111,11 @@ class _MyAppState extends State<MyApp> {
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(height: 150, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: cpuData, isCurved: true, color: Colors.red, dotData: FlDotData(show: false))]))),
-            SizedBox(height: 150, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: ramData, isCurved: true, color: Colors.blue, dotData: FlDotData(show: false))]))),
+            Text("Fibonacci(40): $fiboTime ms"),
+            Text("Loop Sum: $loopTime ms"),
+            Text("QuickSort: $quickSortTime ms"),
+            SizedBox(height: 120, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: cpuData, isCurved: true, color: Colors.red, dotData: FlDotData(show: false))]))),
+            SizedBox(height: 120, child: LineChart(LineChartData(lineBarsData: [LineChartBarData(spots: ramData, isCurved: true, color: Colors.blue, dotData: FlDotData(show: false))]))),
             ElevatedButton(
               onPressed: () => downloadLog(context),
               child: Text("Download CSV Log"),
