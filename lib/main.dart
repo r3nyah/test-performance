@@ -63,7 +63,7 @@ class _MyAppState extends State<MyApp> {
   void startMonitoring() {
     _timer = Timer.periodic(Duration(seconds: 2), (timer) {
       setState(() {
-        int cpuUsage = (50 + (50 * (timer.tick % 5))).toInt();
+        int cpuUsage = (50 + (50 * (timer.tick % 5))).clamp(0, 100).toInt();
         int ramUsage = (400 + (100 * (timer.tick % 5))).toInt();
         int runtime = timer.tick * 2 * 1000;
 
